@@ -50,23 +50,30 @@ GeoStream integrates into your existing systems without requiring modifications 
 
 ### System Integration Topology
 
-```
-+-----------------------------------------------------------------------------------+
-|                                  YOUR COMPANY                                     |
-|                                                                                   |
-|  +--------------------+                                   +--------------------+  |
-|  |  Company Backend  | ---(1) Provision Geofences ------> |                    |  |
-|  |  & Admin Portal    |                                    |                    |  |
-|  +---------^----------+                                   |                    |  |
-|            |                                              |     GeoStream      |  |
-|            +--------------(4) Webhook Event (JSON) -------|    Microservice    |  |
-|                                                           |                    |  |
-|  +--------------------+                                   |                    |  |
-|  |  Company Mobile    | ---(2) Telemetry Streams --------> |                    |  |
-|  |  App / GPS Device  |     (POST /v1/telemetry)          |                    |  |
-|  +--------------------+                                   +--------------------+  |
-|                                                                                   |
-+-----------------------------------------------------------------------------------+
+```mermaid
+flowchart LR
+    subgraph Company[Your Company]
+        Backend[Company Backend & Admin Portal]
+        Mobile[Mobile App / GPS Device]
+    end
+
+    subgraph GS[GeoStream Microservice]
+        API[Telemetry API]
+        Stream[Kafka / Redis Stream]
+        Worker[Spatial Processing Worker]
+        Index[(Spatial Index - GeoHash / QuadTree)]
+        Geo[Geometry Engine - Haversine + Ray Casting]
+        Events[Event Emitter - Webhooks / Kafka Output]
+    end
+
+    Backend -- 1 Provision Geofences --> API
+    Mobile -- 2 Telemetry Streams --> API
+    API --> Stream
+    Stream --> Worker
+    Worker <--> Index
+    Worker <--> Geo
+    Worker --> Events
+    Events -- 4 Webhook Event --> Backend
 ```
 
 ### Example Business Workflow (Logistics Delivery)
@@ -90,7 +97,7 @@ sequenceDiagram
     autonumber
     actor Dev as Company App / GPS Device
     participant API as Telemetry API Node
-    queue Stream as Kafka / Redis Stream<br>(telemetry-input)
+    queue Stream as Kafka / Redis Stream (telemetry-input)
     participant Worker as Spatial Processing Worker
     database Redis as Redis State Cache
     actor Backend as Company Backend Webhook
