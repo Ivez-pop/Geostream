@@ -50,23 +50,11 @@ GeoStream integrates into your existing systems without requiring modifications 
 
 ### System Integration Topology
 
-```
-+-----------------------------------------------------------------------------------+
-|                                  YOUR COMPANY                                     |
-|                                                                                   |
-|  +--------------------+                                   +--------------------+  |
-|  |  Company Backend  | ---(1) Provision Geofences ------> |                    |  |
-|  |  & Admin Portal    |                                    |                    |  |
-|  +---------^----------+                                   |                    |  |
-|            |                                              |     GeoStream      |  |
-|            +--------------(4) Webhook Event (JSON) -------|    Microservice    |  |
-|                                                           |                    |  |
-|  +--------------------+                                   |                    |  |
-|  |  Company Mobile    | ---(2) Telemetry Streams --------> |                    |  |
-|  |  App / GPS Device  |     (POST /v1/telemetry)          |                    |  |
-|  +--------------------+                                   +--------------------+  |
-|                                                                                   |
-+-----------------------------------------------------------------------------------+
+```mermaid
+flowchart LR
+    Backend[Company Backend / Admin Portal] -->|1 Provision Geofences| API[GeoStream API]
+    Mobile[Company Mobile App / GPS Device] -->|2 POST /v1/telemetry| API
+    API -->|4 Webhook Event JSON| Backend
 ```
 
 ### Example Business Workflow (Logistics Delivery)
@@ -85,12 +73,29 @@ GeoStream integrates into your existing systems without requiring modifications 
 
 GeoStream separates I/O-bound telemetry ingestion from CPU-bound spatial processing. This design ensures that api nodes can accept incoming traffic spikes without being slowed down by geometry processing.
 
+### High-Level Architecture
+
+```mermaid
+flowchart LR
+    GPS[GPS Devices / IoT] --> API[Telemetry Ingestion API]
+    API --> Stream[Kafka / Redis Stream]
+    Stream --> Worker[Spatial Processing Workers]
+    Worker --> Index[GeoHash / QuadTree Spatial Index]
+    Worker --> Geo[Haversine + Ray Casting Engine]
+    Worker --> State[Redis State Cache]
+    Worker --> Emitter[Event Emitter]
+    Emitter --> Webhook[Webhooks]
+    Emitter --> KafkaOut[Kafka Output Topic]
+```
+
+### Sequence Flow
+
 ```mermaid
 sequenceDiagram
     autonumber
     actor Dev as Company App / GPS Device
     participant API as Telemetry API Node
-    queue Stream as Kafka / Redis Stream<br>(telemetry-input)
+    participant Stream as Kafka / Redis Stream
     participant Worker as Spatial Processing Worker
     database Redis as Redis State Cache
     actor Backend as Company Backend Webhook
@@ -115,8 +120,8 @@ sequenceDiagram
         Worker->>Worker: Polygonal Fence: Ray-Casting
     end
     
-    Worker->>Redis: Query & Update residency state
-    Redis-->>Worker: State change: OUTSIDE -> INSIDE
+    Worker->>Redis: Query and Update residency state
+    Redis-->>Worker: State change: OUTSIDE to INSIDE
     
     Worker->>Backend: Post Webhook Callback (GEOFENCE_ENTER)
     deactivate Worker
