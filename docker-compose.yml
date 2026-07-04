@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Redis - State Cache & Idempotency Store
+  redis:
+    image: redis:7-alpine
+    container_name: geostream-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - geostream-network
+
+  # Zookeeper - Kafka Coordinator
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: geostream-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - geostream-network
+
+  # Kafka - Telemetry Ingestion Log
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: geostream-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - geostream-network
+
+  # Webhook Mock - Mock target server to receive downstream geofence alerts
+  webhook-mock:
+    image: node:18-alpine
+    container_name: geostream-webhook-mock
+    ports:
+      - "9000:9000"
+    command: >
+      node -e "
+      const http = require('http');
+      const server = http.createServer((req, res) => {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+          console.log(`[Webhook Alert Received] [${new Date().toISOString()}] URL: ${req.url} Payload:`, JSON.parse(body));
+          res.writeHead(200, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ status: 'Delivered' }));
+        });
+      });
+      server.listen(9000, () => console.log('Mock Webhook Receiver running on port 9000...'));
+      "
+    networks:
+      - geostream-network
+
+volumes:
+  redis_data:
+
+networks:
+  geostream-network:
+    driver: bridge
