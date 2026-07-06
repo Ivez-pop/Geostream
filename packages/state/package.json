@@ -1,0 +1,14 @@
+{
+  "name": "@geostream/state",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@geostream/config": "*",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0"
+  }
+}

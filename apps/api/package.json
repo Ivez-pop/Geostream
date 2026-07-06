@@ -1,0 +1,16 @@
+{
+  "name": "@geostream/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@geostream/config": "*",
+    "@geostream/queue": "*",
+    "@fastify/cors": "^11.0.0",
+    "fastify": "^5.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0"
+  }
+}

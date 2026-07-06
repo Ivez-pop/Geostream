@@ -1,0 +1,17 @@
+{
+  "name": "@geostream/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@geostream/config": "*",
+    "@geostream/geometry": "*",
+    "@geostream/queue": "*",
+    "@geostream/spatial": "*",
+    "@geostream/state": "*",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0"
+  }
+}

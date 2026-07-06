@@ -1,0 +1,14 @@
+{
+  "name": "@geostream/queue",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@geostream/config": "*",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0"
+  }
+}
